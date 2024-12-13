@@ -1,0 +1,18 @@
+{% extends "base.html" %} {% block content %}
+<h2>Conversations</h2>
+<ul>
+  {% for msg in messages %}
+  <li>
+    <strong>From:</strong> {{msg.sender_id}}
+    <strong>To:</strong> {{msg.recipient_id}}
+    <strong>Message:</strong> {{msg.content}}
+    <strong>At:</strong> {{msg.timestamp}}
+  </li>
+  {% endfor %}
+</ul>
+<form method="POST">
+  <label>Recipient ID:</label><input type="text" name="recipient_id" />
+  <label>Message:</label><input type="text" name="content" />
+  <button type="submit">Send</button>
+</form>
+{% endblock %}
