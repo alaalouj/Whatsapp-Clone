@@ -6,10 +6,10 @@ import os
 import logging
 
 # Configuration
-BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")  # via docker network
+BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")  # Assurez-vous que ce nom correspond au service backend dans Docker
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "supersecretkey")  # en prod, utiliser une variable d'environnement
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "supersecretkey")  # Utilisez une clé secrète sécurisée en production
 
 # Configuration du logger de Flask
 handler = logging.StreamHandler()
@@ -109,7 +109,7 @@ def login():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     """
-    Gère l'inscription de nouveaux utilisateurs.
+    Gère l'inscription des nouveaux utilisateurs.
     """
     if request.method == "POST":
         username = request.form.get("username")
