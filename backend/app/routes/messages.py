@@ -7,13 +7,12 @@ from app.schemas import MessageCreate, MessageOut
 from app.models import UserModel, MessageModel
 from app.security import decode_token
 from app.kafka_utils import produce_message
-from app.websocket_manager import ConnectionManager
-from app.dependencies import get_current_user_id
+from app.websocket_manager import manager  # Importer l'instance globale
+from app.dependencies import get_current_user_id  # Assurez-vous que ce chemin est correct
 import asyncio
 import logging
 
 router = APIRouter()
-manager = ConnectionManager()
 logger = logging.getLogger(__name__)
 
 @router.post("/", response_model=MessageOut)
@@ -36,6 +35,7 @@ async def send_message(msg: MessageCreate, user_id: int = Depends(get_current_us
         "timestamp": new_msg.timestamp.isoformat()
     }
     await produce_message("messages", message_data)
+    logger.info(f"Message from user {user_id} to user {msg.recipient_id} sent and published to Kafka")
 
     return new_msg
 
@@ -46,4 +46,5 @@ def get_conversations(user_id: int, current_user_id: int = Depends(get_current_u
     msgs = db.query(MessageModel).filter(
         (MessageModel.sender_id == user_id) | (MessageModel.recipient_id == user_id)
     ).order_by(MessageModel.timestamp.asc()).all()
+    logger.info(f"Retrieved conversations for user {user_id}")
     return msgs

@@ -5,11 +5,10 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models import UserModel
 from app.security import decode_token
-from app.websocket_manager import ConnectionManager
+from app.websocket_manager import manager  # Importer l'instance globale
 import logging
 
 router = APIRouter()
-manager = ConnectionManager()
 logger = logging.getLogger(__name__)
 
 @router.websocket("/ws/{token}")
@@ -29,7 +28,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str, db: Session = Dep
             await websocket.close(code=1008)
             return
 
-        await manager.connect(user_id, websocket)
+        await manager.connect(user_id, websocket)  # Utiliser l'instance globale
         logger.info(f"WebSocket connection established for user {user_id}")
 
         while True:
@@ -38,7 +37,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str, db: Session = Dep
             logger.info(f"Received message from user {user_id}: {data}")
 
     except WebSocketDisconnect:
-        manager.disconnect(user_id, websocket)
+        manager.disconnect(user_id, websocket)  # Utiliser l'instance globale
         logger.info(f"WebSocket disconnected for user {user_id}")
     except Exception as e:
         logger.error(f"WebSocket error: {str(e)}")
