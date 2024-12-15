@@ -1,11 +1,12 @@
 # backend/app/schemas.py
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List
 from datetime import datetime
 
 class UserCreate(BaseModel):
     username: str = Field(..., example="john_doe")
+    email: EmailStr = Field(..., example="john_doe@example.com")  # Ajout de l'email
     password: str = Field(..., example="strongpassword123")
 
 class UserLogin(BaseModel):
@@ -15,6 +16,7 @@ class UserLogin(BaseModel):
 class UserOut(BaseModel):
     id: int
     username: str
+    email: EmailStr  # Ajout de l'email
     created_at: datetime
 
     class Config:
