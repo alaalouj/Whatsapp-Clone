@@ -1,6 +1,7 @@
+<!-- frontend/templates/conversations.html -->
 {% extends "base.html" %} {% block content %}
 <h2>Conversations</h2>
-<ul>
+<ul id="messages-list">
   {% for msg in messages %}
   <li>
     <strong>From:</strong> {{msg.sender_id}}
@@ -11,8 +12,46 @@
   {% endfor %}
 </ul>
 <form method="POST">
-  <label>Recipient ID:</label><input type="text" name="recipient_id" />
-  <label>Message:</label><input type="text" name="content" />
+  <label>Recipient ID:</label
+  ><input type="number" name="recipient_id" required /> <label>Message:</label
+  ><input type="text" name="content" required />
   <button type="submit">Send</button>
 </form>
+{% if error %}
+<p style="color: red">{{ error }}</p>
+{% endif %}
+
+<script>
+  const token = "{{ token }}";
+  const userId = "{{ user_id }}";
+
+  // Utiliser "localhost:8000" pour la connexion WebSocket
+  const wsProtocol = "ws"; // ou "wss" si HTTPS est utilisé
+  const ws = new WebSocket(`${wsProtocol}://localhost:8000/ws/${token}`);
+
+  ws.onopen = function (event) {
+    console.log("WebSocket connection established.");
+  };
+
+  ws.onmessage = function (event) {
+    const message = JSON.parse(event.data);
+    const messagesList = document.getElementById("messages-list");
+    const newMessage = document.createElement("li");
+    newMessage.innerHTML = `
+            <strong>From:</strong> ${message.sender_id}
+            <strong>To:</strong> ${message.recipient_id}
+            <strong>Message:</strong> ${message.content}
+            <strong>At:</strong> ${message.timestamp}
+        `;
+    messagesList.appendChild(newMessage);
+  };
+
+  ws.onclose = function (event) {
+    console.log("WebSocket connection closed.");
+  };
+
+  ws.onerror = function (error) {
+    console.error("WebSocket error:", error);
+  };
+</script>
 {% endblock %}

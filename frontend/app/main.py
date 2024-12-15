@@ -1,11 +1,14 @@
+# frontend/app/main.py
+
 from flask import Flask, render_template, request, session, redirect, url_for
 import requests
 import os
 
-BACKEND_URL = "http://backend:8000"  # via docker network
+# Configuration
+BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")  # via docker network
 
 app = Flask(__name__)
-app.secret_key = "frontendsecretkey"  # en prod, utiliser variable d'env
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "frontendsecretkey")  # en prod, utiliser une variable d'environnement
 
 @app.route("/")
 def index():
@@ -20,15 +23,15 @@ def login():
     resp = requests.post(f"{BACKEND_URL}/users/login", json={"username": username, "password": password})
     if resp.status_code == 200:
         data = resp.json()
-        session["token"] = data["access_token"]
-        # Récupérer l'ID utilisateur à partir du token (normalement stocké dans le JWT, on simplifie)
-        # Ici, on pourrait appeler /users/me si on avait ce endpoint. Pour simplifier, ajoutons-le plus tard.
-        # Hypothèse: ID stocké dans token décodé côté frontend (non recommandé en prod).
-        # Simplifions en ajoutant un cookie user_id une fois l'endpoint prévu:
-        # Pour l'instant on ne sait pas user_id. On pourrait créer un endpoint /users/me, mais on a pas implémenté.
-        # On va le faire simple: On stocke username, on supposera user_id connu plus tard ou on modifie backend.
+        token = data["access_token"]
+        session["token"] = token
         session["username"] = username
-        return redirect(url_for("conversations"))
+        user_id = get_user_id(token)
+        if user_id is not None:
+            session["user_id"] = user_id
+            return redirect(url_for("conversations"))
+        else:
+            return "Failed to retrieve user ID", 401
     else:
         return "Login failed", 401
 
@@ -48,35 +51,28 @@ def register():
 def conversations():
     token = session.get("token")
     username = session.get("username")
-    if not token or not username:
+    user_id = session.get("user_id")
+    if not token or not username or not user_id:
         return redirect(url_for("index"))
-    # Dans un vrai cas, on aurait besoin d'un endpoint /users/me pour récupérer l'user_id
-    # Rajoutons-le rapidement dans le backend (facultatif)
-    user_id = get_user_id(token)
-    if user_id is None:
-        return "User not found", 401
 
     if request.method == "POST":
         recipient_id = request.form.get("recipient_id")
         content = request.form.get("content")
-        headers = {"token": token}
-        resp = requests.post(f"{BACKEND_URL}/messages", json={"recipient_id": int(recipient_id), "content": content}, headers=headers)
+        headers = {"Authorization": f"Bearer {token}"}
+        resp = requests.post(f"{BACKEND_URL}/messages/", json={"recipient_id": int(recipient_id), "content": content}, headers=headers)
         if resp.status_code != 200:
             return "Message send failed", 400
 
-    headers = {"token": token}
+    headers = {"Authorization": f"Bearer {token}"}
     resp = requests.get(f"{BACKEND_URL}/conversations/{user_id}", headers=headers)
     messages = resp.json() if resp.status_code == 200 else []
-    return render_template("conversations.html", messages=messages)
+    return render_template("conversations.html", messages=messages, token=token, user_id=user_id)
 
 def get_user_id(token):
-    # Décoder le token JWT côté frontend (non recommandé, mieux d'avoir un endpoint dédié dans backend)
-    # Par simplification, ajoutons un endpoint dans backend:
-    # On modifie backend/app/routes/auth.py (ajouter un /users/me) :
-
-    resp = requests.get(f"{BACKEND_URL}/users/me", headers={"token": token})
+    # Utiliser l'endpoint /users/me pour récupérer les informations de l'utilisateur
+    resp = requests.get(f"{BACKEND_URL}/users/me", headers={"Authorization": f"Bearer {token}"})
     if resp.status_code == 200:
-        return resp.json()["id"]
+        return resp.json().get("id")
     return None
 
 if __name__ == "__main__":

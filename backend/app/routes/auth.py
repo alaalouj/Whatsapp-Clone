@@ -6,10 +6,11 @@ from app.db import get_db
 from app.schemas import UserOut, UserCreate, UserLogin
 from app.models import UserModel
 from app.security import verify_password, create_access_token, get_password_hash
+from app.dependencies import get_current_user_id
 
 router = APIRouter()
 
-@router.post("/users/register", response_model=UserOut)
+@router.post("/register", response_model=UserOut)
 def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(UserModel).filter(UserModel.username == user_data.username).first()
     if existing_user:
@@ -25,7 +26,7 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-@router.post("/users/login")
+@router.post("/login")
 def login(user_data: UserLogin, db: Session = Depends(get_db)):
     user = db.query(UserModel).filter(UserModel.username == user_data.username).first()
     if not user or not verify_password(user_data.password, user.hashed_password):
@@ -34,10 +35,8 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
     token = create_access_token({"sub": str(user.id)})
     return {"access_token": token, "token_type": "bearer"}
 
-@router.get("/users/me", response_model=UserOut)
-def get_me(token: str = Header(None), db: Session = Depends(get_db)):
-    from app.routes.messages import get_current_user_id
-    user_id = get_current_user_id(token=token, db=db)
+@router.get("/me", response_model=UserOut)
+def get_me(user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
