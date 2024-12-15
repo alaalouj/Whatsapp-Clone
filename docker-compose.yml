@@ -47,7 +47,8 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       KAFKA_BROKER: ${KAFKA_BROKER}
-      JWT_SECRET: ${JWT_SECRET}
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM}
     depends_on:
       - db
       - kafka
@@ -55,6 +56,21 @@ services:
       - "8000:8000"
     networks:
       - backend
+    command:
+      [
+        "/wait-for-it.sh",
+        "db:5432",
+        "--",
+        "/wait-for-it.sh",
+        "kafka:9092",
+        "--",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+      ]
 
   frontend:
     build: ./frontend

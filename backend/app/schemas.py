@@ -34,3 +34,7 @@ class MessageOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+class Conversation(BaseModel):
+    user: UserOut
+    messages: List[MessageOut]
