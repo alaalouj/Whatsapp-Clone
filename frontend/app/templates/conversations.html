@@ -7,30 +7,29 @@
       {% for user in users %}
       <li
         class="user {% if user.id == selected_user_id %}active{% endif %}"
-        onclick="selectUser({{ user.id }}, '{{ user.username }}')"
+        onclick="selectUser({{ user.id }}, '{{ user.username | e }}')"
       >
-        {{ user.username }}
+        {{ user.username | e }}
       </li>
       {% endfor %}
     </ul>
   </div>
   <div class="content">
-    {% if selected_user_id %}
-    <h3>
-      Chat with {{ users | selectattr('id', 'equalto', selected_user_id) |
-      first.username }}
-    </h3>
+    {% if selected_user_id %} {# Utiliser une variable temporaire pour
+    l'utilisateur sélectionné #} {% set selected_user = users | selectattr('id',
+    'equalto', selected_user_id) | first %} {% if selected_user %}
+    <h3>Chat with {{ selected_user.username | e }}</h3>
     <div class="messages" id="messages">
       {% for msg in messages %}
       <div
         class="message {% if msg.sender_id == user_id %}sent{% else %}received{% endif %}"
       >
         <p>
-          <strong
-            >{{ 'You' if msg.sender_id == user_id else 'User ' +
-            str(msg.sender_id) }}</strong
-          >
-          >: {{ msg.content }}
+          <strong>
+            {{ 'You' if msg.sender_id == user_id else 'User ' +
+            msg.sender_id|string }}
+          </strong>
+          : {{ msg.content | e }}
         </p>
         <span>{{ msg.timestamp }}</span>
       </div>
@@ -55,6 +54,8 @@
       </div>
     </form>
     {% else %}
+    <p>Selected user not found.</p>
+    {% endif %} {% else %}
     <p>Select a contact to start chatting.</p>
     {% endif %}
   </div>
@@ -65,6 +66,9 @@
   const userId = "{{ user_id }}";
   let selectedUserId = {{ selected_user_id if selected_user_id else 'null' }};
   let ws = null;
+
+  // Définir BACKEND_URL pour JavaScript
+  const BACKEND_URL = "{{ BACKEND_URL }}";
 
   function selectUser(userId, username) {
     // Rediriger vers la même page avec le paramètre user_id
@@ -78,8 +82,11 @@
     if (!selectedUserId) {
       return;
     }
+
     const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/${token}`);
+    // Extraire l'hôte et le port du BACKEND_URL
+    const backendHost = new URL(BACKEND_URL).host;
+    ws = new WebSocket(`${wsProtocol}://${backendHost}/ws/${token}`);
 
     ws.onopen = function (event) {
       console.log("WebSocket connection established.");
@@ -94,7 +101,7 @@
         newMessage.classList.add("message");
         newMessage.classList.add(message.sender_id === userId ? "sent" : "received");
         newMessage.innerHTML = `
-          <p><strong>${message.sender_id === userId ? 'You' : 'User ' + message.sender_id}</strong>: ${message.content}</p>
+          <p><strong>${message.sender_id === userId ? 'You' : 'User ' + message.sender_id}</strong>: ${message.content | e}</p>
           <span>${new Date(message.timestamp).toLocaleString()}</span>
         `;
         messagesDiv.appendChild(newMessage);
@@ -160,4 +167,5 @@
     });
   }
 </script>
+
 {% endblock %}

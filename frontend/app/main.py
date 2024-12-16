@@ -142,9 +142,7 @@ def register():
 
 @app.route("/conversations", methods=["GET", "POST"])
 def conversations():
-    """
-    Gère l'affichage des conversations et l'envoi des messages.
-    """
+    # Vérifier si l'utilisateur est authentifié
     if not is_authenticated():
         app.logger.warning("User is not authenticated. Redirecting to login.")
         return redirect(url_for("index"))
@@ -243,7 +241,8 @@ def conversations():
         users=users,
         token=token,
         user_id=user_id,
-        selected_user_id=selected_user_id
+        selected_user_id=selected_user_id,
+        BACKEND_URL=BACKEND_URL  # Assurez-vous que BACKEND_URL est défini correctement
     )
 
 @app.route("/logout")
