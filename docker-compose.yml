@@ -82,7 +82,6 @@ services:
     environment:
       - API_URL=http://backend:8000 # Pour les requêtes serveur vers backend
       - BACKEND_URL=http://localhost:8000 # Pour les requêtes client depuis le navigateur
-      - WEBSOCKET_URL=ws://backend:8000 # URL accessible depuis le navigateur
       - FLASK_SECRET_KEY=supersecretkey
     networks:
       - backend

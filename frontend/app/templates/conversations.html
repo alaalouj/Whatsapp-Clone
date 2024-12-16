@@ -93,23 +93,46 @@
 
     ws.onmessage = function (event) {
       const message = JSON.parse(event.data);
-      // Vérifier si le message appartient à la conversation actuelle
-      if (message.sender_id === selectedUserId || message.recipient_id === selectedUserId) {
-        const messagesDiv = document.getElementById("messages");
-        const newMessage = document.createElement("div");
-        newMessage.classList.add("message");
-        newMessage.classList.add(message.sender_id === userId ? "sent" : "received");
-        newMessage.innerHTML = `
-          <p><strong>${message.sender_id === userId ? 'You' : 'User ' + message.sender_id}</strong>: ${message.content | e}</p>
-          <span>${new Date(message.timestamp).toLocaleString()}</span>
-        `;
-        messagesDiv.appendChild(newMessage);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+      switch (message.type) {
+        case "new_message":
+          // Vérifier si le message concerne la conversation actuelle
+          if (message.data.sender_id === selectedUserId || message.data.recipient_id === selectedUserId) {
+            const messagesDiv = document.getElementById("messages");
+            const newMessage = document.createElement("div");
+            newMessage.classList.add("message");
+            newMessage.classList.add(message.data.sender_id === userId ? "sent" : "received");
+            newMessage.innerHTML = `
+              <p><strong>${message.data.sender_id === userId ? 'You' : 'User ' + message.data.sender_id}</strong>: ${message.data.content}</p>
+              <span>${new Date(message.data.timestamp).toLocaleString()}</span>
+            `;
+            messagesDiv.appendChild(newMessage);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+          }
+          break;
+
+        case "new_user":
+          // Ajouter ce nouvel utilisateur à la liste des utilisateurs
+          const usersList = document.querySelector(".sidebar ul");
+          // Vérifier si l'utilisateur existe déjà dans la liste
+          if (!Array.from(usersList.children).some(li => li.textContent === message.data.username)) {
+            const li = document.createElement("li");
+            li.classList.add("user");
+            li.setAttribute("onclick", `selectUser(${message.data.id}, '${message.data.username | e}')`);
+            li.textContent = message.data.username;
+            usersList.appendChild(li);
+          }
+          break;
+
+        default:
+          console.log("Unknown message type:", message.type);
       }
     };
 
     ws.onclose = function (event) {
       console.log("WebSocket connection closed.");
+      // Optionnel : essayer de se reconnecter après un certain délai
+      setTimeout(connectWebSocket, 5000);
     };
 
     ws.onerror = function (error) {
@@ -153,7 +176,7 @@
       })
       .then(response => {
         if (response.ok) {
-          // Optionally, clear the input field
+          // Optionnel : vider le champ de saisie
           document.getElementById("content").value = "";
         } else {
           alert("Failed to send message.");

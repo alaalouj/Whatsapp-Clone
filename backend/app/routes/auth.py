@@ -6,9 +6,12 @@ from app.db import get_db
 from app.schemas import UserOut, UserCreate, UserLogin
 from app.models import UserModel
 from app.security import verify_password, create_access_token, get_password_hash
+from app.websocket_manager import manager
 from app.dependencies import get_current_user_id
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.post("/register", response_model=UserOut)
 def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
@@ -27,6 +30,21 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Créer l'événement WebSocket pour le nouvel utilisateur
+    new_user_event = {
+        "type": "new_user",
+        "data": {
+            "id": new_user.id,
+            "username": new_user.username,
+            "email": new_user.email
+        }
+    }
+
+    # Diffuser l'événement à tous les utilisateurs connectés
+    manager.broadcast(new_user_event)
+
+    logger.info(f"User {new_user.username} registered successfully and broadcasted")
     return new_user
 
 @router.post("/login")
