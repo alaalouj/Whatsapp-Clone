@@ -1,12 +1,11 @@
-# frontend/app/main.py
-
+import os
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 import requests
-import os
 import logging
 
 # Configuration
-BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")  # Assurez-vous que ce nom correspond au service backend dans Docker
+API_URL = os.getenv("API_URL", "http://backend:8000")       # Pour les requêtes serveur
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")  # Pour les requêtes client
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "supersecretkey")  # Utilisez une clé secrète sécurisée en production
@@ -33,7 +32,7 @@ def get_user_id(token):
     app.logger.debug(f"Token sent to /users/me: {token}")
     try:
         resp = requests.get(
-            f"{BACKEND_URL}/users/me",
+            f"{API_URL}/users/me",
             headers={"Authorization": f"Bearer {token}"}
         )
         app.logger.debug(f"/users/me response: {resp.status_code} - {resp.text}")
@@ -69,7 +68,7 @@ def login():
 
     try:
         resp = requests.post(
-            f"{BACKEND_URL}/users/login",
+            f"{API_URL}/users/login",
             json={"username": username, "password": password}
         )
     except requests.exceptions.RequestException as e:
@@ -119,7 +118,7 @@ def register():
 
         try:
             resp = requests.post(
-                f"{BACKEND_URL}/users/register",
+                f"{API_URL}/users/register",
                 json={"username": username, "email": email, "password": password}
             )
         except requests.exceptions.RequestException as e:
@@ -168,7 +167,7 @@ def conversations():
 
         try:
             resp = requests.post(
-                f"{BACKEND_URL}/messages/",
+                f"{API_URL}/messages/",
                 json={"recipient_id": int(recipient_id), "content": content},
                 headers=headers
             )
@@ -188,7 +187,7 @@ def conversations():
     # Récupérer la liste des utilisateurs
     headers = {"Authorization": f"Bearer {token}"}
     try:
-        users_resp = requests.get(f"{BACKEND_URL}/users", headers=headers)
+        users_resp = requests.get(f"{API_URL}/users", headers=headers)
     except requests.exceptions.RequestException as e:
         app.logger.error(f"Users list request failed: {e}")
         flash("Failed to retrieve users list: Unable to reach backend service.", "error")
@@ -212,7 +211,7 @@ def conversations():
 
         try:
             resp = requests.get(
-                f"{BACKEND_URL}/messages/conversations/{user_id}",
+                f"{API_URL}/messages/conversations/{user_id}",
                 headers=headers
             )
         except requests.exceptions.RequestException as e:
@@ -242,7 +241,7 @@ def conversations():
         token=token,
         user_id=user_id,
         selected_user_id=selected_user_id,
-        BACKEND_URL=BACKEND_URL  # Assurez-vous que BACKEND_URL est défini correctement
+        BACKEND_URL=BACKEND_URL  # Passer BACKEND_URL pour le JavaScript
     )
 
 @app.route("/logout")

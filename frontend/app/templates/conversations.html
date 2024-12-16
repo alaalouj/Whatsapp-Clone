@@ -15,8 +15,7 @@
     </ul>
   </div>
   <div class="content">
-    {% if selected_user_id %} {# Utiliser une variable temporaire pour
-    l'utilisateur sélectionné #} {% set selected_user = users | selectattr('id',
+    {% if selected_user_id %} {% set selected_user = users | selectattr('id',
     'equalto', selected_user_id) | first %} {% if selected_user %}
     <h3>Chat with {{ selected_user.username | e }}</h3>
     <div class="messages" id="messages">
@@ -85,7 +84,7 @@
 
     const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     // Extraire l'hôte et le port du BACKEND_URL
-    const backendHost = new URL(BACKEND_URL).host;
+    const backendHost = new URL(BACKEND_URL).host;  // 'localhost:8000'
     ws = new WebSocket(`${wsProtocol}://${backendHost}/ws/${token}`);
 
     ws.onopen = function (event) {
