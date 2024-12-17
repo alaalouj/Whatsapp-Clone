@@ -86,6 +86,20 @@ services:
     networks:
       - backend
 
+  watch:
+    image: alpine
+    container_name: watch
+    volumes:
+      - ./backend:/src/backend
+      - ./frontend:/src/frontend
+    command: >
+      sh -c "while true; do
+      inotifywait -r -e modify,create,delete /src/backend /src/frontend;
+      echo 'Files changed. Triggering restart...';
+      done"
+    networks:
+      - backend
+
 networks:
   backend:
 

@@ -1,6 +1,80 @@
 <!-- frontend/templates/conversations.html -->
 {% extends "base.html" %} {% block content %}
 <div class="container">
+  <style>
+    .content {
+    width: 1000px;
+  }
+
+    .messages {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 20px;
+      background-color: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      height: 400px;
+      overflow-y: auto;
+    }
+  
+    .message {
+      max-width: 60%;
+      padding: 10px;
+      border-radius: 20px;
+      font-size: 14px;
+      line-height: 1.5;
+      position: relative;
+    }
+  
+    .message.sent {
+      align-self: flex-end;
+      background-color: #0d5102;
+      color: white;
+      border-top-right-radius: 0;
+    }
+  
+    .message.received {
+      align-self: flex-start;
+      background-color: #e9ecef;
+      color: #333;
+      border-top-left-radius: 0;
+    }
+  
+    .message span {
+      font-size: 12px;
+      color: #666;
+      display: block;
+      margin-top: 5px;
+    }
+  
+    .form-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+  
+    .form-group input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+    }
+  
+    .form-group button {
+      padding: 10px 20px;
+      background-color: #0d5102;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+  
+    .form-group button:hover {
+      background-color: #289617;
+    }
+  </style>
+  
   <div class="sidebar">
     <h3>Contacts</h3>
     <ul>
@@ -17,7 +91,7 @@
   <div class="content">
     {% if selected_user_id %} {% set selected_user = users | selectattr('id',
     'equalto', selected_user_id) | first %} {% if selected_user %}
-    <h3>Chat with {{ selected_user.username | e }}</h3>
+    <h3>Chat with <div id="r_username">{{ selected_user.username | e }}</div></h3>
     <div class="messages" id="messages">
       {% for msg in messages %}
       <div
@@ -25,8 +99,7 @@
       >
         <p>
           <strong>
-            {{ 'You' if msg.sender_id == user_id else 'User ' +
-            msg.sender_id|string }}
+            {{ 'You' if msg.sender_id == user_id else selected_user.username | e }}
           </strong>
           : {{ msg.content | e }}
         </p>
@@ -93,17 +166,18 @@
 
     ws.onmessage = function (event) {
       const message = JSON.parse(event.data);
-
+      const r_username = document.getElementById("r_username").textContent  ;
       switch (message.type) {
         case "new_message":
           // Vérifier si le message concerne la conversation actuelle
           if (message.data.sender_id === selectedUserId || message.data.recipient_id === selectedUserId) {
             const messagesDiv = document.getElementById("messages");
             const newMessage = document.createElement("div");
+            const senderName = message.data.sender_id === userId ? "You" : r_username;
             newMessage.classList.add("message");
             newMessage.classList.add(message.data.sender_id === userId ? "sent" : "received");
             newMessage.innerHTML = `
-              <p><strong>${message.data.sender_id === userId ? 'You' : 'User ' + message.data.sender_id}</strong>: ${message.data.content}</p>
+              <p><strong>${senderName}</strong>: ${message.data.content}</p>
               <span>${new Date(message.data.timestamp).toLocaleString()}</span>
             `;
             messagesDiv.appendChild(newMessage);
@@ -178,6 +252,7 @@
         if (response.ok) {
           // Optionnel : vider le champ de saisie
           document.getElementById("content").value = "";
+          window.location.reload();
         } else {
           alert("Failed to send message.");
         }
@@ -188,6 +263,15 @@
       });
     });
   }
+  window.onload = function () {
+    const messagesDiv = document.getElementById("messages");
+    if (messagesDiv) {
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+    if (selectedUserId) {
+      connectWebSocket();
+    }
+  };
 </script>
 
 {% endblock %}
