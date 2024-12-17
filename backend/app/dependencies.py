@@ -49,3 +49,16 @@ def get_current_user_id(authorization: str = Header(None), db: Session = Depends
 
     logger.debug(f"Authenticated user_id: {user_id}")
     return user_id
+
+
+def get_current_username(authorization: str = Header(None), db: Session = Depends(get_db)) -> str:
+    
+    user_id = get_current_user_id(authorization, db)
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+
+    if not user:
+        logger.error(f"User not found with ID: {user_id}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    logger.debug(f"Authenticated username: {user.username}")
+    return user.username
